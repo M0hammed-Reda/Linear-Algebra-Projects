@@ -31,16 +31,8 @@ private:
     void gaussianElimination(QVector<QVector<double>>& matrix, QVector<double>& solution);
     void backSubstitution(QVector<QVector<double>>& matrix, QVector<double>& solution);
 
-    // Helper function to find the pivot row
-    int findPivotRow(const QVector<QVector<double>>& matrix, int row, int col) {
-        int pivotRow = row;
-        for (int i = row + 1; i < matrix.size(); ++i) {
-            if (qAbs(matrix[i][col]) > qAbs(matrix[pivotRow][col])) {
-                pivotRow = i;
-            }
-        }
-        return pivotRow;
-    }
+    // Helper function to find the pivot row (declared here but defined in the .cpp file)
+    int findPivotRow(const QVector<QVector<double>>& matrix, int row, int col);
 };
 
 #endif // MAINWINDOW_H
