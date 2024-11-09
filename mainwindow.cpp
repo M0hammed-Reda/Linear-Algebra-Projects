@@ -16,9 +16,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->spinBox, SIGNAL(valueChanged(int)), this, SLOT(updateTableSize()));
     connect(ui->spinBox_2, SIGNAL(valueChanged(int)), this, SLOT(updateTableSize()));
 
-    // Set initial size for tableWidget (3x4)
-    ui->spinBox->setValue(3);   // Default rows
-    ui->spinBox_2->setValue(4);  // Default columns
+    // Set initial size for tableWidget (2x2 to avoid smaller matrix)
+    ui->spinBox->setValue(2);   // Default rows
+    ui->spinBox_2->setValue(2);  // Default columns
+
+    // Add constraints to ensure the rows and columns can't be smaller than 2
+    ui->spinBox->setMinimum(2);  // Minimum rows = 2
+    ui->spinBox_2->setMinimum(2); // Minimum columns = 2
 
     updateTableSize();
 }
@@ -28,6 +32,13 @@ void MainWindow::updateTableSize()
 {
     int rows = ui->spinBox->value();
     int cols = ui->spinBox_2->value();
+
+    // Ensure both rows and columns are at least 2
+    if (rows < 2) rows = 2;
+    if (cols < 2) cols = 2;
+
+    ui->spinBox->setValue(rows);  // Ensure spinBox reflects the correct value
+    ui->spinBox_2->setValue(cols); // Ensure spinBox reflects the correct value
 
     ui->tableWidget->setRowCount(rows);
     ui->tableWidget->setColumnCount(cols);
@@ -48,18 +59,24 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-// Function to print the matrix to QTableWidget with a given comment
+// Function to print the matrix to QTableWidget with a given comment, with enhanced formatting
 void MainWindow::printMatrixToUI(const QVector<QVector<double>>& matrix, const QString& comment) {
-    // Append comment to output area
-    ui->outputTextEdit->append(comment + "\n");
+    ui->outputTextEdit->append("<b>" + comment + "</b>\n");
 
-    // Print matrix in text format
+    // Print matrix with bold formatting for readability
     for (const auto& row : matrix) {
-        QString rowStr = "| ";
-        for (const auto& elem : row) {
-            rowStr += QString::number(elem, 'f', 5) + " ";
+        QString rowStr = "<b>(";
+        int lastColumn = row.size() - 1;
+        for (int i = 0; i < row.size(); ++i) {
+            QString numberStr = QString::number((std::abs(row[i]) < 1e-10 ? 0.0 : row[i]), 'f', 2); // 2 decimal precision and avoid "-0"
+            rowStr += numberStr;
+            if (i == lastColumn - 1) {
+                rowStr += " | ";
+            } else if (i < lastColumn) {
+                rowStr += " ";
+            }
         }
-        rowStr += " |";
+        rowStr += ")</b>";
         ui->outputTextEdit->append(rowStr);
     }
     ui->outputTextEdit->append("\n");
@@ -76,9 +93,10 @@ void MainWindow::swapRows(QVector<QVector<double>>& matrix, int row1, int row2) 
 // Normalize a specific row and log the operation
 void MainWindow::normalizeRow(QVector<QVector<double>>& matrix, int row, double pivot) {
     int cols = matrix[row].size();
-    for (int i = 0; i < cols; ++i)
+    for (int i = 0; i < cols; ++i) {
         matrix[row][i] /= pivot;
-    printMatrixToUI(matrix, QString("Normalized R%1 by dividing by %2").arg(row + 1).arg(pivot));
+    }
+    printMatrixToUI(matrix, QString("Normalized R%1 by dividing by %2").arg(row + 1).arg(QString::number(pivot, 'f', 2)));
 }
 
 // Eliminate elements below the pivot in a given column and log the operation
@@ -90,7 +108,7 @@ void MainWindow::eliminateBelow(QVector<QVector<double>>& matrix, int row) {
         double factor = matrix[i][row] / matrix[row][row];
         for (int j = row; j < cols; ++j)
             matrix[i][j] -= factor * matrix[row][j];
-        printMatrixToUI(matrix, QString("Eliminated below pivot in R%1 by factor %2").arg(i + 1).arg(factor));
+        printMatrixToUI(matrix, QString("Eliminated below pivot in R%1 by factor %2").arg(i + 1).arg(factor, 0, 'f', 2));
     }
 }
 
@@ -108,22 +126,25 @@ void MainWindow::gaussianElimination(QVector<QVector<double>>& matrix, QVector<d
     backSubstitution(matrix, solution);            // Perform back substitution
 }
 
-// Back substitution to find solution after Gaussian elimination
+// Back substitution to find solution after Gaussian elimination with formatted solution output
 void MainWindow::backSubstitution(QVector<QVector<double>>& matrix, QVector<double>& solution) {
     int n = matrix.size();
     solution.resize(n, 0);
 
     for (int i = n - 1; i >= 0; --i) {
         solution[i] = matrix[i].back();
-        for (int j = i + 1; j < n; ++j)
+        for (int j = i + 1; j < n; ++j) {
             solution[i] -= matrix[i][j] * solution[j];
+        }
         solution[i] /= matrix[i][i];
     }
 
-    // Output the solution
-    ui->outputTextEdit->append("Solution:");
-    for (int i = 0; i < n; ++i)
-        ui->outputTextEdit->append(QString("x%1 = %2").arg(i + 1).arg(solution[i]));
+    // Output the solution with bold formatting and precision
+    ui->outputTextEdit->append("<b>Solution:</b>");
+    for (int i = 0; i < n; ++i) {
+        QString solutionStr = QString("x%1 = %2").arg(i + 1).arg((std::abs(solution[i]) < 1e-10 ? 0.0 : solution[i]), 0, 'f', 2);
+        ui->outputTextEdit->append("<b>" + solutionStr + "</b>");
+    }
 }
 
 // Function called when the solve button is clicked
@@ -131,6 +152,12 @@ void MainWindow::on_solveButton_clicked() {
     // Read input matrix from QTableWidget
     int rows = ui->tableWidget->rowCount();
     int cols = ui->tableWidget->columnCount();
+
+    // Ensure that matrix is at least 2x2
+    if (rows < 2 || cols < 2) {
+        ui->outputTextEdit->setText("Matrix dimensions must be at least 2x2.");
+        return;
+    }
 
     // Parse the input matrix into a QVector
     QVector<QVector<double>> matrix;
@@ -163,4 +190,15 @@ void MainWindow::on_solveButton_clicked() {
 
     // Perform Gaussian elimination
     gaussianElimination(matrix, solution);
+}
+
+// Find the pivot row for Gaussian elimination
+int MainWindow::findPivotRow(const QVector<QVector<double>>& matrix, int row, int col) {
+    int pivotRow = row;
+    for (int i = row + 1; i < matrix.size(); ++i) {
+        if (qAbs(matrix[i][col]) > qAbs(matrix[pivotRow][col])) {
+            pivotRow = i;
+        }
+    }
+    return pivotRow;
 }
