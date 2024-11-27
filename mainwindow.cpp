@@ -126,7 +126,7 @@ void MainWindow::eliminateBelow(QVector<QVector<double>>& matrix, int row) {
 
     for (int i = row + 1; i < rows; ++i) {
         double factor = matrix[i][row] / matrix[row][row];
-        for (int j = row; j < cols; ++j)
+        for (int j = 0; j < cols; ++j)
             matrix[i][j] -= factor * matrix[row][j];
         printMatrixToUI(matrix, QString("Eliminated below pivot in R%1 by factor %2").arg(i + 1).arg(factor, 0, 'f', 2));
     }
