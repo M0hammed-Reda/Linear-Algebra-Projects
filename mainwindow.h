@@ -30,6 +30,7 @@ private:
     void normalizeRow(QVector<QVector<double>>& matrix, int row, double pivot); // Normalize a row by its pivot
     void eliminateBelow(QVector<QVector<double>>& matrix, int row); // Eliminate elements below the pivot
     void gaussianElimination(QVector<QVector<double>>& matrix, QVector<double>& solution); // Perform Gaussian elimination
+    void gaussJordanElimination(QVector<QVector<double>>& matrix, QVector<double>& solution);
     void backSubstitution(QVector<QVector<double>>& matrix, QVector<double>& solution); // Perform back substitution
     int findPivotRow(const QVector<QVector<double>>& matrix, int row, int col); // Find the pivot row for Gaussian elimination
 };
