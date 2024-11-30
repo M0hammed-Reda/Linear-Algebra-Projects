@@ -36,7 +36,7 @@
      <rect>
       <x>6</x>
       <y>6</y>
-      <width>321</width>
+      <width>183</width>
       <height>26</height>
      </rect>
     </property>
@@ -220,6 +220,11 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <item>
      <property name="text">
       <string>Solve by Gauss-Jordan</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>Solve using inverse matrix</string>
      </property>
     </item>
    </widget>
